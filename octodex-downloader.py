@@ -1,25 +1,37 @@
 from bs4 import BeautifulSoup
-import urllib
+from urllib.request import urlopen
 import wget
 import os
+import csv
 
 link = "https://octodex.github.com/"
-page = urllib.urlopen(link)
-soup = BeautifulSoup(page.read(), "html.parser")
 
-octodex_list = "octodex_list.txt"
+with urlopen(link) as url:
+	soup = BeautifulSoup(url.read(), "html.parser")
+
+octocat_list = "octodex_list.txt"
 
 image_tags = soup.findAll('img', {"data-src": True})
+print("Found", len(image_tags), "octocats.\n")
 
 try:
-	os.remove(octodex_list)
+	os.remove(octocat_list)
 except OSError:
 	pass
 
-with open("octodex_list.txt", "w") as avatar_list:
-	# os.mkdir("avatars")
-	os.chdir("avatars")
+with open("octodex_list.txt", "w") as octocat_list:
+	if not os.path.exists("octocats"):
+		os.mkdir("octocats")
+	os.chdir("octocats")
+
+	csvWriter = csv.writer(octocat_list)
+	csvWriter.writerow(['name', 'url'])
+
 	for tag in image_tags:
-		image_link = link[:-1] + str(tag['data-src'])
-		wget.download(image_link)
-		avatar_list.write(image_link)
+		octocat_image_link = link[:-1] + str(tag['data-src'])
+		octocat_name = str(tag['alt'])
+		wget.download(octocat_image_link, out = octocat_name + str(tag['data-src'])[-4:], bar = None)
+		print("Downloaded", octocat_name)
+		csvWriter.writerow([octocat_name, octocat_image_link])
+
+print("\nDownloaded all", len(image_tags), "octocats.")
